@@ -9,10 +9,11 @@ from runa_sim.kinematics import tick_to_angle, angle_to_tick
 
 
 def test_head_conversion():
-    for servo_id, ticks in [(1,0),(1,800),(1,1200),(2,1900),(2,2100)]:
+    for servo_id, ticks in [(1,800),(1,1200),(2,1900),(2,2100)]:
         assert abs(angle_to_tick(servo_id,tick_to_angle(servo_id,ticks))-ticks) <= 1
     assert tick_to_angle(1,1200) == tick_to_angle(2,1900) == 0
     assert tick_to_angle(1,-100) == tick_to_angle(1,0)
+    assert tick_to_angle(1,0) <= 1.0471975512
     with pytest.raises(ValueError):
         tick_to_angle(3,0)
 

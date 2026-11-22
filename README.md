@@ -1,3 +1,5 @@
+![Runa in the SOBITS arena — rendered preview](assets/hero.png)
+
 # Runa_sim
 
 **Runa mobile-manipulator simulation for ROS 2 Jazzy / Gazebo Harmonic.**
@@ -90,7 +92,7 @@ missing. `GZ_SIM_RESOURCE_PATH` is extended only for the launched processes.
 | Gripper | `/gripper_controller/joint_trajectory` and `/gripper_controller/follow_joint_trajectory` |
 | Joint feedback | `/joint_states` (arm, gripper, head and lift) |
 | Pan / tilt | `/set_position`, `/present_position`, `/get_position`; public `SetPosition` / `GetPosition` types |
-| Lift | `/lift_control` (`LiftControl`); legacy wire field `hight`, absolute height in mm, 0–180 |
+| Lift | `/lift_control` (`LiftControl`); legacy wire field `hight`, absolute height in mm, 0–180 (within the CAD's provisional 200 mm travel) |
 | Head RGB-D | `/d455/camera/rgbd` (`realsense2_camera_msgs/msg/RGBD`) plus separate image/info topics |
 | Wrist RGB-D | `/camera/d415_link/rgbd` plus separate image/info topics |
 | Face display input | `/face` image relayed to `/sim/face` for viewers |
@@ -106,7 +108,8 @@ This is **transport compatibility**, not a claim that every existing Robot metho
 has been validated. There are no fake success servers for speech recognition,
 TTS, VLM/LLM planning, person finding/following, or motor-current push detection.
 Those require real external software and are outside this simulation release.
-There is no simulated Livox point cloud yet; `livox_frame` is available as TF only.
+The CAD wrist camera is a D435i; its `/camera/d415_link/*` output name is retained
+only for client compatibility. There is no simulated Livox point cloud yet; `livox_frame` is available as TF only.
 
 ### Public Python example
 
@@ -119,9 +122,10 @@ from runa_sim.robot import Robot
 rclpy.init()
 robot = Robot()
 try:
+    assert robot.wait_ready(timeout=60)
     print(robot.get_arm_pose(timeout=10))
     assert robot.set_arm_joints({'joint1': 0.2}, duration=2.0)
-    assert robot.set_gripper(0.015)  # metres, not servo ticks
+    assert robot.set_gripper(0.010)  # metres, not servo ticks
     assert robot.set_pantilt(pan=2100, tilt=1100)
     image = robot.get_latest_rgb_image(camera='d455')
     depth_mm = robot.get_latest_depth_image(camera='d415')
@@ -142,15 +146,19 @@ not imply completed movement—read feedback to confirm arrival.
 
 ## Model and sensor fidelity
 
-- Primitive geometry, approximate dynamics; not a mesh/CAD-accurate digital twin.
-- Wheel radius 0.05 m, track 0.39 m; base command cap 0.4 m/s and 1 rad/s,
+- Visuals and kinematic transforms come from the reviewed AJIROBO-MINI-V4 CAD mesh URDF.
+  Masses, inertias, contact geometry and sensor integration remain approximate.
+  The README header is a CAD + field **rendered preview**, not a Gazebo test screenshot.
+- CAD wheel radius 0.05035 m, track 0.345 m; base command cap 0.4 m/s and 1 rad/s,
   with a wall-clock velocity watchdog at 0.5 s.
 - Head ticks: tilt ID 1, horizontal 1200; pan ID 2, forward 1900; 4096 ticks/rev.
-  Tilt is clamped to 0–1200; pan respects the model's ±2.9 rad joint limits.
-- Gripper stroke is 0–0.025 m per finger with a mimic joint. Object grasp stability
+  Tilt is clamped to 0–1200; pan respects the CAD model's ±π/2 joint limits; tilt also respects its ±π/3 range.
+- Gripper stroke is 0–0.015 m per finger with a mimic joint. Object grasp stability
   and real servo current/contact behavior are not established.
 - Cameras share RGB/depth geometry: RGB image plus `16UC1` millimetre depth,
   invalid depth 0. Native Gazebo `32FC1` metre depth is available under `/sim/*`.
+- CAD arm zero is not a calibrated hardware encoder zero. Simulation uses explicit
+  CAD-to-API joint-name aliases; numeric hardware pose calibration is not supplied.
 - Arm, head and lift use real `gz_ros2_control` / trajectory controllers; joint
   feedback is measured simulated state, not an echo of requested targets.
 

@@ -13,11 +13,11 @@
 <joint name="lift_joint"><command_interface name="position"/><state_interface name="position"><param name="initial_value">0</param></state_interface><state_interface name="velocity"/></joint>
 <joint name="gripper_right_joint"><state_interface name="position"/><state_interface name="velocity"/></joint>
   </ros2_control>
-  <gazebo><plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher"><topic>/sim/wheel_joint_states</topic><joint_name>left_wheel_joint</joint_name><joint_name>right_wheel_joint</joint_name></plugin>
+  <gazebo><plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher"><topic>/sim/wheel_joint_states</topic><joint_name>left_wheel_joint</joint_name><joint_name>right_wheel_joint</joint_name><joint_name>front_left_omni_joint</joint_name><joint_name>front_right_omni_joint</joint_name><joint_name>rear_left_omni_joint</joint_name><joint_name>rear_right_omni_joint</joint_name></plugin>
     <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin"><parameters>${controllers_file}</parameters></plugin>
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint><right_joint>right_wheel_joint</right_joint>
-      <wheel_separation>0.39</wheel_separation><wheel_radius>0.05</wheel_radius>
+      <wheel_separation>0.345</wheel_separation><wheel_radius>0.05035</wheel_radius>
       <topic>/sim/cmd_vel</topic><odom_topic>/sim/odom</odom_topic><tf_topic>/sim/odom_tf</tf_topic>
       <frame_id>odom</frame_id><child_frame_id>base_footprint</child_frame_id><odom_publish_frequency>50</odom_publish_frequency>
       <max_linear_velocity>0.4</max_linear_velocity><min_linear_velocity>-0.4</min_linear_velocity>
@@ -27,9 +27,9 @@
   </gazebo>
   <gazebo reference="laser"><sensor name="hokuyo" type="gpu_lidar"><topic>/sim/scan</topic><gz_frame_id>laser</gz_frame_id><update_rate>10</update_rate><lidar><scan><horizontal><samples>720</samples><resolution>1</resolution><min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal></scan><range><min>0.08</min><max>20</max><resolution>0.01</resolution></range></lidar><always_on>true</always_on><visualize>false</visualize></sensor></gazebo>
   <gazebo reference="bno055_link"><sensor name="imu" type="imu"><topic>/sim/imu</topic><gz_frame_id>bno055_link</gz_frame_id><update_rate>50</update_rate><always_on>true</always_on></sensor></gazebo>
-  <xacro:macro name="rgbd_sensor" params="link name optical">
-    <gazebo reference="${link}"><sensor name="${name}" type="rgbd_camera"><topic>/sim/${name}</topic><gz_frame_id>${optical}</gz_frame_id><update_rate>10</update_rate><always_on>true</always_on><camera><horizontal_fov>1.2</horizontal_fov><image><width>320</width><height>240</height><format>R8G8B8</format></image><clip><near>0.05</near><far>8</far></clip><depth_camera><clip><near>0.05</near><far>8</far></clip></depth_camera></camera></sensor></gazebo>
+  <xacro:macro name="rgbd_sensor" params="link name optical offset">
+    <gazebo reference="${link}"><sensor name="${name}" type="rgbd_camera"><pose>${offset} 0 0 0 0 0</pose><topic>/sim/${name}</topic><gz_frame_id>${optical}</gz_frame_id><update_rate>10</update_rate><always_on>true</always_on><camera><horizontal_fov>1.2</horizontal_fov><image><width>320</width><height>240</height><format>R8G8B8</format></image><clip><near>0.05</near><far>8</far></clip><depth_camera><clip><near>0.05</near><far>8</far></clip></depth_camera></camera></sensor></gazebo>
   </xacro:macro>
-  <xacro:rgbd_sensor link="camera_link" name="d455" optical="d455_color_optical_frame"/>
-  <xacro:rgbd_sensor link="d415_link" name="d415" optical="d415_color_optical_frame"/>
+  <xacro:rgbd_sensor link="head_camera_link" name="d455" optical="d455_color_optical_frame" offset="0.013"/>
+  <xacro:rgbd_sensor link="wrist_camera_link" name="d415" optical="d415_color_optical_frame" offset="0.012525"/>
 </xacro:macro></robot>

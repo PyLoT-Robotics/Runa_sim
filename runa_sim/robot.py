@@ -13,6 +13,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from action_msgs.msg import GoalStatus
 from nav2_msgs.action import NavigateToPose, Spin
 from control_msgs.action import FollowJointTrajectory
+from controller_manager_msgs.srv import ListControllers
 from sensor_msgs.msg import JointState, Image
 from trajectory_msgs.msg import JointTrajectoryPoint
 from dynamixel_sdk_custom_interfaces.msg import SetPosition
@@ -39,6 +40,7 @@ class Robot(Node):
         self.create_subscription(RGBD, '/camera/d415_link/rgbd', lambda msg: self.images.update(d415=msg), 10)
         self.head_pub = self.create_publisher(SetPosition, '/set_position', 10)
         self.face_pub = self.create_publisher(Image, '/face', 10)
+        self.controller_client = self.create_client(ListControllers, '/controller_manager/list_controllers', callback_group=self.group)
         self.head_client = self.create_client(GetPosition, '/get_position', callback_group=self.group)
         self.lift_client = self.create_client(LiftControl, '/lift_control', callback_group=self.group)
         self.nav = ActionClient(self, NavigateToPose, '/navigate_to_pose', callback_group=self.group)
@@ -78,6 +80,18 @@ class Robot(Node):
             self._future(handle.cancel_goal_async(), 2.0)
             return False
         return result.status == GoalStatus.STATUS_SUCCEEDED
+
+    def wait_ready(self, timeout=30.0):
+        deadline = time.monotonic() + timeout
+        expected = {'arm_controller','gripper_controller','head_controller','lift_controller'}
+        if not self.controller_client.wait_for_service(timeout_sec=min(timeout,5.0)):
+            return False
+        while time.monotonic() < deadline:
+            result = self._future(self.controller_client.call_async(ListControllers.Request()), 2.0)
+            if result is not None and expected <= {c.name for c in result.controller if c.state == 'active'}:
+                return True
+            time.sleep(0.1)
+        return False
 
     @property
     def robot_position(self):
@@ -125,6 +139,8 @@ class Robot(Node):
     def _trajectory(self, client, names, positions, duration):
         if not names or len(names) != len(positions) or not math.isfinite(duration) or duration <= 0 or not all(math.isfinite(float(p)) for p in positions):
             return False
+        if not self.wait_ready(timeout=30.0):
+            return False
         goal = FollowJointTrajectory.Goal()
         goal.trajectory.joint_names = list(names)
         point = JointTrajectoryPoint()
@@ -146,7 +162,7 @@ class Robot(Node):
         return self._trajectory(self.arm_client, list(target), list(target.values()), duration)
 
     def set_gripper(self, position, duration=1.0):
-        if not 0 <= position <= 0.025:
+        if not 0 <= position <= 0.015:
             return False
         return self._trajectory(self.gripper_client, ['gripper_left_joint'], [position], duration)
 

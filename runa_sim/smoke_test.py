@@ -27,12 +27,15 @@ def main():
     velocity = robot.create_publisher(Twist, '/cmd_vel', 10)
     try:
         assert robot.wait(lambda: odom and scans and robot.get_arm_pose(timeout=0.01), 120), 'No odometry/scan/joint feedback'
+        assert robot.wait_ready(timeout=90), 'Controllers did not become active'
         results['feedback'] = True
         x, y = odom[-1].pose.pose.position.x, odom[-1].pose.pose.position.y
         command = Twist()
         command.linear.x = 0.1
-        deadline = time.monotonic() + 2
-        while time.monotonic() < deadline:
+        start_sim = robot.get_clock().now().nanoseconds * 1e-9
+        deadline = time.monotonic() + 45
+        while (robot.get_clock().now().nanoseconds * 1e-9 - start_sim < 2.0
+               and time.monotonic() < deadline):
             velocity.publish(command)
             time.sleep(0.05)
         # Stop publishing: the compatibility watchdog must stop the base.
@@ -48,9 +51,9 @@ def main():
         assert robot.set_arm_joints({'joint1': 0.2}, duration=1.0), 'Arm action failed'
         assert abs(robot.get_arm_joint('joint1')-0.2) < 0.05, 'Arm feedback mismatch'
         results['arm'] = True
-        assert robot.set_gripper(0.015), 'Gripper action failed'
-        assert abs(robot.get_gripper_position()-0.015) < 0.005, 'Gripper feedback mismatch'
-        assert abs(robot.joints.get('gripper_right_joint', -1)-0.015) < 0.005, 'Mimic finger did not follow'
+        assert robot.set_gripper(0.010), 'Gripper action failed'
+        assert abs(robot.get_gripper_position()-0.010) < 0.005, 'Gripper feedback mismatch'
+        assert abs(robot.joints.get('gripper_right_joint', -1)-0.010) < 0.005, 'Mimic finger did not follow'
         results['gripper'] = True
         assert robot.set_pantilt(pan=2100, tilt=1100), 'Pan/tilt publish failed'
         assert robot.wait(lambda: robot.get_pantilt_position(2) is not None and abs(robot.get_pantilt_position(2)-2100) < 30, 10), 'Pan did not move'

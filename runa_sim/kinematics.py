@@ -3,9 +3,9 @@ import math
 
 def tick_to_angle(servo_id, value):
     if servo_id == 1:
-        return (1200 - max(0, min(1200, value))) * 2 * math.pi / 4096
+        return min(math.pi/3, (1200 - max(0, min(1200, value))) * 2 * math.pi / 4096)
     if servo_id == 2:
-        return max(-2.9, min(2.9, (value - 1900) * 2 * math.pi / 4096))
+        return max(-math.pi/2, min(math.pi/2, (value - 1900) * 2 * math.pi / 4096))
     raise ValueError('pan/tilt ID must be 1 or 2')
 
 
