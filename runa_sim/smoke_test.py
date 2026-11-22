@@ -50,9 +50,11 @@ def main():
         results['arm'] = True
         assert robot.set_gripper(0.015), 'Gripper action failed'
         assert abs(robot.get_gripper_position()-0.015) < 0.005, 'Gripper feedback mismatch'
+        assert abs(robot.joints.get('gripper_right_joint', -1)-0.015) < 0.005, 'Mimic finger did not follow'
         results['gripper'] = True
         assert robot.set_pantilt(pan=2100, tilt=1100), 'Pan/tilt publish failed'
         assert robot.wait(lambda: robot.get_pantilt_position(2) is not None and abs(robot.get_pantilt_position(2)-2100) < 30, 10), 'Pan did not move'
+        assert robot.wait(lambda: robot.get_pantilt_position(1) is not None and abs(robot.get_pantilt_position(1)-1100) < 30, 10), 'Tilt did not move'
         results['pantilt'] = True
         assert robot.lift_control(30), 'Lift command rejected'
         assert robot.wait(lambda: abs(robot.joints.get('lift_joint', -1)-0.03) < 0.005, 10), 'Lift did not move'
@@ -66,6 +68,8 @@ def main():
             assert robot.wait(lambda: robot.robot_position, 90), 'No map -> base transform'
             pose = robot.robot_position
             assert robot.go_to_abs([pose[0] + 0.35, pose[1], pose[2]], timeout=90), 'Nav2 goal failed'
+            reached = robot.robot_position
+            assert math.hypot(reached[0]-pose[0], reached[1]-pose[1]) > 0.05, 'Nav2 reported success without displacement'
             assert robot.rotate_in_place(0.25, timeout=30), 'Nav2 spin failed'
             results['navigation'] = True
         results['success'] = True

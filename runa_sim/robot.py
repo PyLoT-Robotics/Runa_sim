@@ -45,9 +45,9 @@ class Robot(Node):
         self.spin = ActionClient(self, Spin, '/spin', callback_group=self.group)
         self.arm_client = ActionClient(self, FollowJointTrajectory, '/arm_controller/follow_joint_trajectory', callback_group=self.group)
         self.gripper_client = ActionClient(self, FollowJointTrajectory, '/gripper_controller/follow_joint_trajectory', callback_group=self.group)
-        self.executor = MultiThreadedExecutor(num_threads=2)
-        self.executor.add_node(self)
-        self.worker = threading.Thread(target=self.executor.spin, daemon=True)
+        self._spin_executor = MultiThreadedExecutor(num_threads=2)
+        self._spin_executor.add_node(self)
+        self.worker = threading.Thread(target=self._spin_executor.spin, daemon=True)
         self.worker.start()
 
     def _joints(self, msg):
@@ -198,6 +198,6 @@ class Robot(Node):
         return True
 
     def destroy_node(self):
-        self.executor.shutdown(timeout_sec=2.0)
+        self._spin_executor.shutdown(timeout_sec=2.0)
         self.worker.join(timeout=2.0)
         return super().destroy_node()

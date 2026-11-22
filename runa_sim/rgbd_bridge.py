@@ -33,13 +33,13 @@ class RgbdBridge(Node):
         cam = self.get_parameter('camera').value
         self.frame = f'{cam}_color_optical_frame'
         base = '/d455/camera' if cam == 'd455' else '/camera/d415_link'
-        self.publishers = {name: self.create_publisher(kind, base + '/' + name, 10) for name, kind in [
+        self._output_publishers = {name: self.create_publisher(kind, base + '/' + name, 10) for name, kind in [
             ('color/image_raw', Image), ('depth/image_rect_raw', Image),
             ('aligned_depth_to_color/image_raw', Image), ('color/camera_info', CameraInfo),
             ('depth/camera_info', CameraInfo), ('aligned_depth_to_color/camera_info', CameraInfo), ('rgbd', RGBD)]}
-        self.subscribers = [message_filters.Subscriber(self, kind, f'/sim/{cam}/{suffix}', qos_profile=qos_profile_sensor_data)
+        self._input_subscribers = [message_filters.Subscriber(self, kind, f'/sim/{cam}/{suffix}', qos_profile=qos_profile_sensor_data)
                             for kind, suffix in [(Image, 'image'), (Image, 'depth_image'), (CameraInfo, 'camera_info')]]
-        self.sync = message_filters.ApproximateTimeSynchronizer(self.subscribers, 10, 0.05)
+        self.sync = message_filters.ApproximateTimeSynchronizer(self._input_subscribers, 10, 0.05)
         self.sync.registerCallback(self.frames)
 
     def frames(self, color, depth, info):
@@ -54,12 +54,12 @@ class RgbdBridge(Node):
         for name, value in [('color/image_raw', color), ('depth/image_rect_raw', converted),
                             ('aligned_depth_to_color/image_raw', converted), ('color/camera_info', info),
                             ('depth/camera_info', info), ('aligned_depth_to_color/camera_info', info)]:
-            self.publishers[name].publish(value)
+            self._output_publishers[name].publish(value)
         out = RGBD()
         out.header, out.rgb, out.depth = color.header, color, converted
         out.rgb_camera_info = info
         out.depth_camera_info = info
-        self.publishers['rgbd'].publish(out)
+        self._output_publishers['rgbd'].publish(out)
 
 
 def main(args=None):
