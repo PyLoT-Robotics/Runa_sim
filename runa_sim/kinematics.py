@@ -11,5 +11,3 @@ def tick_to_angle(servo_id, value):
 
 def angle_to_tick(servo_id, value):
     return round(1200 - value * 4096 / (2 * math.pi)) if servo_id == 1 else round(1900 + value * 4096 / (2 * math.pi))
-
-

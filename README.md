@@ -68,15 +68,14 @@ For the full upstream furniture placement:
 cd ~/runa_ws
 vcs import src < src/Runa_sim/full-field.repos
 rosdep install --from-paths src --ignore-src -r -y
+colcon build --symlink-install --packages-select tmc_wrs_gz_worlds aws_small_house_world \
+  --cmake-args -DBUILD_TESTING=OFF
 colcon build --symlink-install --packages-up-to runa_sim \
-  --packages-select tmc_wrs_gz_worlds aws_small_house_world \
   --cmake-args -DBUILD_TESTING=OFF
 source install/setup.bash
 ros2 launch runa_sim sim.launch.py full_field:=true
 ```
 
-If your colcon version cannot combine the package selectors, build the two asset
-packages first with `--packages-select`, then build `--packages-up-to runa_sim`.
 Full-field launch checks model paths and fails clearly if required models are
 missing. `GZ_SIM_RESOURCE_PATH` is extended only for the launched processes.
 
