@@ -22,7 +22,7 @@ def build(context):
     worlds = Path(get_package_share_directory('sobits_gazebo_worlds'))
     gui = LaunchConfiguration('gui').perform(context).lower() == 'true'
     full = LaunchConfiguration('full_field').perform(context).lower() == 'true'
-    models = [worlds / 'models']
+    models = [worlds / 'models', desc.parent]
     for package in ['tmc_wrs_gz_worlds', 'aws_small_house_world']:
         try:
             models.append(Path(get_package_share_directory(package)) / 'models')

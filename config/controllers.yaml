@@ -12,6 +12,7 @@ controller_manager:
       type: joint_trajectory_controller/JointTrajectoryController
     lift_controller:
       type: joint_trajectory_controller/JointTrajectoryController
+    enforce_command_limits: true
 arm_controller:
   ros__parameters:
     joints:
@@ -36,6 +37,12 @@ gripper_controller:
     - position
     - velocity
     allow_partial_joints_goal: true
+    constraints:
+      goal_time: 2.0
+      stopped_velocity_tolerance: 0.02
+      gripper_left_joint:
+        goal: 0.001
+        trajectory: 0.05
 head_controller:
   ros__parameters:
     joints:
@@ -57,3 +64,9 @@ lift_controller:
     - position
     - velocity
     allow_partial_joints_goal: true
+    constraints:
+      goal_time: 2.0
+      stopped_velocity_tolerance: 0.02
+      lift_joint:
+        goal: 0.001
+        trajectory: 0.05
