@@ -164,9 +164,12 @@ not imply completed movement—read feedback to confirm arrival.
   invalid depth 0. Native Gazebo `32FC1` metre depth is available under `/sim/*`.
 - CAD arm zero is not a calibrated hardware encoder zero. Simulation uses explicit
   CAD-to-API joint-name aliases; numeric hardware pose calibration is not supplied.
-- The lift uses an effort PID trajectory controller to support the arm against
-  gravity, with feedforward for the estimated 2.16 kg lifted assembly. Its gains
-  are simulation tuning, not hardware tuning.
+- The real lift is a **stepper-motor-driven ball screw with position commands**.
+  `/lift_control` remains a height-position API, not a force/current API.
+  Gazebo implements an idealized position actuator using an internal effort PID
+  and gravity feedforward for the estimated 2.16 kg lifted assembly. This numerical
+  implementation is not the real motor control scheme. Screw lead, microsteps,
+  backlash and hardware homing calibration are not modeled.
 - Arm, head and lift use real `gz_ros2_control` / trajectory controllers; joint
   feedback is measured simulated state, not an echo of requested targets.
 
