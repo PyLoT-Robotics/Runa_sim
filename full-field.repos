@@ -1,0 +1,9 @@
+repositories:
+  tmc_wrs_gz:
+    type: git
+    url: https://github.com/TeamSOBITS/tmc_wrs_gz.git
+    version: jazzy-devel
+  aws_small_house_world:
+    type: git
+    url: https://github.com/TeamSOBITS/aws_small_house_world.git
+    version: jazzy-devel

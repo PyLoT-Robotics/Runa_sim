@@ -1,0 +1,60 @@
+name: Jazzy Harmonic
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  simulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container: ros:jazzy-ros-base
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      ROS_DOMAIN_ID: '91'
+      GZ_PARTITION: runa_ci
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ws/src/Runa_sim
+      - name: Install Jazzy and graphics dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y git python3-vcstool python3-pytest python3-colcon-common-extensions \
+            ros-jazzy-ros-gz ros-jazzy-gz-ros2-control ros-jazzy-ros2-controllers \
+            ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-slam-toolbox \
+            ros-jazzy-realsense2-camera-msgs ros-jazzy-cv-bridge \
+            ros-jazzy-xacro libegl-mesa0 libgl1-mesa-dri mesa-utils
+      - name: Import and build public dependencies
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          cd ws
+          vcs import src < src/Runa_sim/dependencies.repos
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
+          colcon build --symlink-install --packages-up-to runa_sim --cmake-args -DBUILD_TESTING=OFF
+      - name: Static and unit tests
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source ws/install/setup.bash
+          python3 -m pytest -q ws/src/Runa_description/test ws/src/Runa_sim/test
+      - name: Real Gazebo and API smoke test
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source ws/install/setup.bash
+          ros2 launch runa_sim sim.launch.py gui:=false > simulation.log 2>&1 &
+          sim_pid=$!
+          trap 'kill -INT "$sim_pid" 2>/dev/null || true' EXIT
+          timeout 300 ros2 run runa_sim smoke_test --navigation --output smoke-results.json \
+            --ros-args -p use_sim_time:=true
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runa-simulation-diagnostics
+          path: |
+            simulation.log
+            smoke-results.json
+            ws/log

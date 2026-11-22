@@ -1,0 +1,59 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: true
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    head_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    lift_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+arm_controller:
+  ros__parameters:
+    joints:
+    - joint1
+    - joint2
+    - joint3
+    - joint4
+    - joint5
+    command_interfaces:
+    - position
+    state_interfaces:
+    - position
+    - velocity
+    allow_partial_joints_goal: true
+gripper_controller:
+  ros__parameters:
+    joints:
+    - gripper_left_joint
+    command_interfaces:
+    - position
+    state_interfaces:
+    - position
+    - velocity
+    allow_partial_joints_goal: true
+head_controller:
+  ros__parameters:
+    joints:
+    - base_to_pan_joint
+    - pan_to_tilt_joint
+    command_interfaces:
+    - position
+    state_interfaces:
+    - position
+    - velocity
+    allow_partial_joints_goal: true
+lift_controller:
+  ros__parameters:
+    joints:
+    - lift_joint
+    command_interfaces:
+    - position
+    state_interfaces:
+    - position
+    - velocity
+    allow_partial_joints_goal: true

@@ -1,0 +1,13 @@
+repositories:
+  Runa_description:
+    type: git
+    url: https://github.com/PyLoT-Robotics/Runa_description.git
+    version: 2225c6d
+  sobits_gazebo_worlds:
+    type: git
+    url: https://github.com/PyLoT-Robotics/sobits_gazebo_worlds.git
+    version: 8890e12043376a623bb178d5eae2406087985976
+  DynamixelSDK:
+    type: git
+    url: https://github.com/PyLoT-Robotics/DynamixelSDK.git
+    version: 73c210daeaca70f93629447c9242e59ec34b0a74
