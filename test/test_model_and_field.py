@@ -46,3 +46,18 @@ def test_fork_field_and_asset_validation(tmp_path):
     assert omitted  # External WRS/AWS furniture is explicit, never silently substituted.
     with pytest.raises(FileNotFoundError,match='Full-field assets missing'):
         prepare_world(root/'worlds/rcjo2025_arena.world.xacro', [root/'models'], tmp_path/'full.sdf', True)
+
+
+def test_lidar_excludes_only_robot_visuals(tmp_path):
+    from runa_sim.model import prepare_model
+    desc = Path(get_package_share_directory('runa_description'))
+    sim = Path(get_package_share_directory('runa_sim'))
+    urdf = tmp_path/'robot.urdf'
+    urdf.write_text(xacro.process_file(str(desc/'urdf/runa.urdf.xacro'), mappings={
+        'sim':'true','controllers_file':str(sim/'config/controllers.yaml')}).toxml())
+    prepare_model(urdf, tmp_path/'robot.sdf')
+    root = ET.parse(tmp_path/'robot.sdf').getroot()
+    assert root.findall('model/link/visual')
+    assert all(v.findtext('visibility_flags')=='2' for v in root.findall('model/link/visual'))
+    assert root.findtext('.//sensor[@name="hokuyo"]/lidar/visibility_mask')=='1'
+    assert root.find('.//sensor[@name="d455"]') is not None

@@ -48,7 +48,8 @@ ros2 launch runa_sim sim.launch.py gui:=false
 ```
 
 Headless cameras / GPU LiDAR still require working EGL/OpenGL rendering. For CPU
-machines try Mesa with `LIBGL_ALWAYS_SOFTWARE=1`; graphics-driver support matters.
+machines try Mesa with `LIBGL_ALWAYS_SOFTWARE=1`; graphics-driver support matters. On NVIDIA machines, avoid forcing Mesa:
+use `env -u LIBGL_ALWAYS_SOFTWARE ros2 launch runa_sim sim.launch.py gui:=false`.
 `navigation:=false` disables SLAM/Nav2 for a smaller controller/sensor test.
 Launch arguments also include `x` (−2 m), `y` (1 m), `yaw` (0 rad) and `world`
 (default `rcjo2025_arena.world.xacro`).
@@ -140,6 +141,7 @@ finally:
 
 Run the example with `--ros-args -p use_sim_time:=true`. This facade is
 `runa_sim.robot.Robot`; it does not install or shadow another package's Robot class.
+`go_to_abs` also checks the final TF pose rather than relying only on action success.
 Its arm/gripper setters wait for controller action completion; legacy topic-based
 setters may return after publication. Pan/tilt publication and lift acceptance do
 not imply completed movement—read feedback to confirm arrival.
@@ -151,6 +153,9 @@ not imply completed movement—read feedback to confirm arrival.
   The README header is a CAD + field **rendered preview**, not a Gazebo test screenshot.
 - CAD wheel radius 0.05035 m, track 0.345 m; base command cap 0.4 m/s and 1 rad/s,
   with a wall-clock velocity watchdog at 0.5 s.
+- Idealized LiDAR ego-return suppression uses SDF visibility masks: robot visuals
+  remain visible to cameras, but only environment visuals are visible to LiDAR.
+  This avoids mapping the robot itself; real body occlusion is not reproduced.
 - Head ticks: tilt ID 1, horizontal 1200; pan ID 2, forward 1900; 4096 ticks/rev.
   Tilt is clamped to 0–1200; pan respects the CAD model's ±π/2 joint limits; tilt also respects its ±π/3 range.
 - Gripper stroke is 0–0.015 m per finger with a mimic joint. Object grasp stability
@@ -159,10 +164,22 @@ not imply completed movement—read feedback to confirm arrival.
   invalid depth 0. Native Gazebo `32FC1` metre depth is available under `/sim/*`.
 - CAD arm zero is not a calibrated hardware encoder zero. Simulation uses explicit
   CAD-to-API joint-name aliases; numeric hardware pose calibration is not supplied.
+- The lift uses an effort PID trajectory controller to support the arm against
+  gravity, with feedforward for the estimated 2.16 kg lifted assembly. Its gains
+  are simulation tuning, not hardware tuning.
 - Arm, head and lift use real `gz_ros2_control` / trajectory controllers; joint
   feedback is measured simulated state, not an echo of requested targets.
 
 ## Validation
+
+Local end-to-end verification on Ubuntu 24.04 / Jazzy / Harmonic passed with the
+reviewed CAD model and the default SOBITS field: **9 unit tests**, base displacement
+0.225 m with zero measured stopping drift, arm/gripper (both fingers), pan/tilt,
+stable lift positioning, both 320×240 RGB-D streams with uint16 millimetre depth,
+a 0.7 m Nav2 goal and a 0.25 rad Spin action. This is a simulation integration
+result, not hardware calibration or a grasping benchmark. The navigation footprint
+covers the base; extended-arm footprint planning is not implemented.
+
 
 ```bash
 cd ~/runa_ws

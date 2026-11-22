@@ -2,7 +2,7 @@ repositories:
   Runa_description:
     type: git
     url: https://github.com/PyLoT-Robotics/Runa_description.git
-    version: ced53d6
+    version: ced53d6fe86eb146ac33555debbe39739bf16c9a
   sobits_gazebo_worlds:
     type: git
     url: https://github.com/PyLoT-Robotics/sobits_gazebo_worlds.git

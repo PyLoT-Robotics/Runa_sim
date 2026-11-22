@@ -30,6 +30,7 @@ class Robot(Node):
     def __init__(self):
         super().__init__('runa_sim_robot')
         self.joints = {}
+        self.velocities = {}
         self.images = {}
         self.bridge = CvBridge()
         self.group = ReentrantCallbackGroup()
@@ -54,6 +55,7 @@ class Robot(Node):
 
     def _joints(self, msg):
         self.joints.update(zip(msg.name, msg.position))
+        self.velocities.update(zip(msg.name, msg.velocity))
 
     def wait(self, predicate, timeout=5.0):
         deadline = time.monotonic() + timeout
@@ -112,7 +114,16 @@ class Robot(Node):
         request.pose.pose.position.x, request.pose.pose.position.y = map(float, goal[:2])
         request.pose.pose.orientation.z = math.sin(float(goal[2])/2)
         request.pose.pose.orientation.w = math.cos(float(goal[2])/2)
-        return self._action(self.nav, request, timeout)
+        if not self._action(self.nav, request, timeout):
+            return False
+        # A planner can legally return a nearby endpoint; verify the requested pose.
+        def reached():
+            pose = self.robot_position
+            if pose is None:
+                return False
+            angle_error = math.atan2(math.sin(pose[2]-goal[2]), math.cos(pose[2]-goal[2]))
+            return math.hypot(pose[0]-goal[0], pose[1]-goal[1]) <= 0.15 and abs(angle_error) <= 0.2
+        return bool(self.wait(reached, 3.0))
 
     def rotate_in_place(self, angle, timeout=30.0):
         if not math.isfinite(float(angle)):

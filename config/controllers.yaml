@@ -12,7 +12,7 @@ controller_manager:
       type: joint_trajectory_controller/JointTrajectoryController
     lift_controller:
       type: joint_trajectory_controller/JointTrajectoryController
-    enforce_command_limits: true
+    enforce_command_limits: false
 arm_controller:
   ros__parameters:
     joints:
@@ -59,14 +59,20 @@ lift_controller:
     joints:
     - lift_joint
     command_interfaces:
-    - position
+    - effort
     state_interfaces:
     - position
     - velocity
     allow_partial_joints_goal: true
     constraints:
-      goal_time: 2.0
+      goal_time: 10.0
       stopped_velocity_tolerance: 0.02
       lift_joint:
         goal: 0.001
         trajectory: 0.05
+    gains:
+      lift_joint:
+        p: 2000.0
+        i: 1000.0
+        d: 100.0
+        i_clamp: 100.0

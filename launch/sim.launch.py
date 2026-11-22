@@ -14,6 +14,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import xacro
 from runa_sim.world import prepare_world
+from runa_sim.model import prepare_model
 
 
 def build(context):
@@ -35,11 +36,13 @@ def build(context):
     world_name, omitted = prepare_world(source, models, temp / 'arena.sdf', full)
     description = xacro.process_file(str(desc / 'urdf/runa.urdf.xacro'), mappings={
         'sim': 'true', 'controllers_file': str(share / 'config/controllers.yaml')}).toxml()
+    (temp / 'robot.urdf').write_text(description)
+    prepare_model(temp / 'robot.urdf', temp / 'robot.sdf')
     nav2 = Path(get_package_share_directory('nav2_bringup'))
     slam = Path(get_package_share_directory('slam_toolbox'))
     gz_args = '-r ' + ('' if gui else '-s --headless-rendering ') + str(temp / 'arena.sdf')
     spawn = Node(package='ros_gz_sim', executable='create', output='screen', arguments=[
-        '-world', world_name, '-name', 'runa', '-topic', '/robot_description',
+        '-world', world_name, '-name', 'runa', '-file', str(temp / 'robot.sdf'),
         '-x', LaunchConfiguration('x'), '-y', LaunchConfiguration('y'), '-z', '0.03',
         '-Y', LaunchConfiguration('yaw'), '-allow_renaming', 'false'])
     broadcaster = Node(package='controller_manager', executable='spawner', output='screen',

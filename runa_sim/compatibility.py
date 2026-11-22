@@ -58,6 +58,8 @@ class Compatibility(Node):
         msg.joint_names = names
         p = JointTrajectoryPoint()
         p.positions = positions
+        if names == ["lift_joint"]:
+            p.effort = [2.16 * 9.8]  # Estimated lifted mass in this model only.
         p.time_from_start = Duration(sec=int(seconds), nanosec=int((seconds % 1) * 1e9))
         msg.points = [p]
         publisher.publish(msg)

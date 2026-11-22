@@ -48,19 +48,23 @@ def main():
         drift = math.hypot(odom[-1].pose.pose.position.x-before[0], odom[-1].pose.pose.position.y-before[1])
         assert drift < 0.03, f'Base failed to stop: {drift}'
         results['base_stop_drift_m'] = drift
-        assert robot.set_arm_joints({'joint1': 0.2}, duration=1.0), 'Arm action failed'
-        assert abs(robot.get_arm_joint('joint1')-0.2) < 0.05, 'Arm feedback mismatch'
+        arm_target = -0.1 if robot.get_arm_joint('joint1') > 0.1 else 0.2
+        assert robot.set_arm_joints({'joint1': arm_target}, duration=1.0), 'Arm action failed'
+        assert abs(robot.get_arm_joint('joint1')-arm_target) < 0.05, 'Arm feedback mismatch'
         results['arm'] = True
-        assert robot.set_gripper(0.010), 'Gripper action failed'
-        assert abs(robot.get_gripper_position()-0.010) < 0.005, 'Gripper feedback mismatch'
-        assert abs(robot.joints.get('gripper_right_joint', -1)-0.010) < 0.005, 'Mimic finger did not follow'
+        gripper_target = 0.003 if robot.get_gripper_position() > 0.005 else 0.010
+        assert robot.set_gripper(gripper_target), 'Gripper action failed'
+        assert robot.wait(lambda: abs(robot.get_gripper_position()-gripper_target) < 0.002, 10), 'Gripper feedback mismatch'
+        assert robot.wait(lambda: abs(robot.joints.get('gripper_right_joint', -1)-gripper_target) < 0.002, 10), 'Mimic finger did not follow'
         results['gripper'] = True
         assert robot.set_pantilt(pan=2100, tilt=1100), 'Pan/tilt publish failed'
         assert robot.wait(lambda: robot.get_pantilt_position(2) is not None and abs(robot.get_pantilt_position(2)-2100) < 30, 10), 'Pan did not move'
         assert robot.wait(lambda: robot.get_pantilt_position(1) is not None and abs(robot.get_pantilt_position(1)-1100) < 30, 10), 'Tilt did not move'
         results['pantilt'] = True
         assert robot.lift_control(30), 'Lift command rejected'
-        assert robot.wait(lambda: abs(robot.joints.get('lift_joint', -1)-0.03) < 0.005, 10), 'Lift did not move'
+        assert robot.wait(lambda: abs(robot.joints.get('lift_joint', -1)-0.03) < 0.003 and abs(robot.velocities.get('lift_joint', 1)) < 0.01, 15), 'Lift did not settle'
+        time.sleep(1)
+        assert abs(robot.joints.get('lift_joint', -1)-0.03) < 0.003, 'Lift did not hold position'
         results['lift'] = True
         for camera in ['d455', 'd415']:
             image = robot.get_latest_rgb_image(timeout=30, camera=camera)
@@ -70,7 +74,7 @@ def main():
         if args.navigation:
             assert robot.wait(lambda: robot.robot_position, 90), 'No map -> base transform'
             pose = robot.robot_position
-            assert robot.go_to_abs([pose[0] + 0.35, pose[1], pose[2]], timeout=90), 'Nav2 goal failed'
+            assert robot.go_to_abs([pose[0] + 0.7, pose[1], pose[2]], timeout=90), 'Nav2 goal failed'
             reached = robot.robot_position
             assert math.hypot(reached[0]-pose[0], reached[1]-pose[1]) > 0.05, 'Nav2 reported success without displacement'
             assert robot.rotate_in_place(0.25, timeout=30), 'Nav2 spin failed'
